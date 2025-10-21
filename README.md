@@ -1,10 +1,13 @@
 # moke
+
 Moke is a mnemonic joke
 
 ## Overview
-Welcome to Moke, the ultimate mnemonic playground! Ever wondered what it's like to juggle words and create magical phrases? Well, Moke is here to tickle your brain cells and make you giggle while you play with BIP-39 mnemonics. 
+
+Welcome to Moke, the ultimate mnemonic playground! Ever wondered what it's like to juggle words and create magical phrases? Well, Moke is here to tickle your brain cells and make you giggle while you play with BIP-39 mnemonics.
 
 ## Features
+
 Moke offers several features to help users understand and play with BIP-39 mnemonics:
 
 - **Checksum Verification**: Moke can verify if a given mnemonic has the correct checksum. This ensures that the mnemonic is valid according to the BIP-39 standard.
@@ -12,43 +15,51 @@ Moke offers several features to help users understand and play with BIP-39 mnemo
 - **Checksum Word Listing**: Moke can list all valid words that can be used to complete a mnemonic with a correct checksum. This is useful for educational purposes and for understanding how mnemonics are constructed.
 
 ## Security Disclaimer
+
 Please note that Moke is not designed with security in mind. It is intended purely for educational and entertainment purposes. Do not use Moke for generating or managing any sensitive applications.
 
 ## Quick Start
 
 ### Download Pre-built Binaries (Recommended)
 
-The easiest way to get started is to download a pre-built binary from the [Releases](https://github.com/pnowosie/moke/releases) page:
+#### Quick Install (curl | bash)
 
-1. **Download** the appropriate binary for your platform:
-   - **Linux**: `moke-linux-amd64` (Intel/AMD) or `moke-linux-arm64` (ARM)
-   - **macOS**: `moke-darwin-amd64` (Intel) or `moke-darwin-arm64` (Apple Silicon)
+The easiest way to install moke is using our automated installer:
 
-2. **Install** the binary:
-   ```bash
-   # Make it executable
-   chmod +x moke-*
-   
-   # Move to your PATH (optional but recommended)
-   sudo mv moke-* /usr/local/bin/moke
-   
-   # Verify installation
-   moke -v
-   ```
+```bash
+# Download and install directly from GitHub
+curl -fsSL https://raw.githubusercontent.com/pnowosie/moke/main/scripts/install.sh | bash -s -- --install
+
+# Or just download the binary locally
+curl -fsSL https://raw.githubusercontent.com/pnowosie/moke/main/scripts/install.sh | bash -s -- --download
+```
+
+The installer automatically:
+
+- Detects your OS and architecture
+- Downloads the correct binary from the latest release
+- Validates checksums for security
+- Installs to `/usr/local/bin` (with `--install` flag)
+
+#### Manual Download
+
+In case you don't trust the installation script, manual download of a pre-built binary from the [Releases](https://github.com/pnowosie/moke/releases) page is still an option.
 
 ### Build from Source
 
 If you prefer to build from source or want to contribute:
 
 1. **Prerequisites**:
+
    - Go 1.23.4 or later
    - Git
 
 2. **Clone and build**:
+
    ```bash
-   git clone https://github.com/pnowosie/moke.git
+   git clone https://github.com/pnowosie/moke
    cd moke
-   go build -o moke cmd/moke.go
+   ./scripts/build.sh --platform local
    ```
 
 3. **Or use the build script**:
@@ -80,11 +91,13 @@ Use the enhanced build script to build for specific platforms:
 ### Creating Releases
 
 1. **Create a release**:
+
    ```bash
    ./scripts/release.sh create 1.0.0
    ```
 
 2. **List existing tags**:
+
    ```bash
    ./scripts/release.sh list
    ```
@@ -127,4 +140,5 @@ We welcome contributions from the community! Here's how to get started:
 - Ensure all workflows pass before submitting PRs
 
 ## License
+
 No licence - use it or ignore it, however you like.

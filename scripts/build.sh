@@ -56,14 +56,9 @@ else
     
     # Get version from git describe if not overridden
     if [ "$SEMVER" = "0.0.0" ]; then
-        if [ "$PLATFORM" = "local" ]; then
-            # For local platform, use 0.0.0-dirty format
-            SEMVER="0.0.0-dirty"
-        else
-            SEMVER=$(git describe --tags --always --dirty 2>/dev/null || echo "0.0.0")
-            # Remove 'v' prefix if present
-            SEMVER=${SEMVER#v}
-        fi
+        GIT_DESCRIBE=$(git describe --tags --always --dirty 2>/dev/null || echo "0.0.0")
+        # Remove 'v' prefix if present
+        SEMVER=${GIT_DESCRIBE#v}
     fi
     
     # Get commit date in YYYY-MM-DD format
