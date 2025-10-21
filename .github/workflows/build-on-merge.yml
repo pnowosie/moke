@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   build-binaries:
     runs-on: ubuntu-latest
@@ -89,43 +94,64 @@ jobs:
           path: build/
           retention-days: 7
 
-      - name: Comment on commit
+      - name: Build Summary
+        run: |
+          echo "## 🚀 Build Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ steps.version.outputs.hash }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** ${{ steps.version.outputs.date }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Built Binaries:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`moke-linux-amd64\` (Linux Intel/AMD 64-bit)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`moke-linux-arm64\` (Linux ARM 64-bit)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`moke-darwin-amd64\` (macOS Intel)" >> $GITHUB_STEP_SUMMARY
+          echo "- \`moke-darwin-arm64\` (macOS Apple Silicon)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Download:" >> $GITHUB_STEP_SUMMARY
+          echo "Binaries are available as build artifacts for 7 days." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "To create a release, use the release script:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "./scripts/release.sh create 1.0.0" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on Commit
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
-
-            // List all built binaries
-            const buildDir = 'build';
-            const files = fs.readdirSync(buildDir).filter(file => file.startsWith('moke-'));
-
-            let comment = `## 🚀 Build Complete!\n\n`;
-            comment += `**Version:** ${{ steps.version.outputs.version }}\n`;
-            comment += `**Commit:** ${{ steps.version.outputs.hash }}\n`;
-            comment += `**Date:** ${{ steps.version.outputs.date }}\n\n`;
-            comment += `### Built Binaries:\n`;
-
-            files.forEach(file => {
-              const platform = file.replace('moke-', '').replace('-amd64', ' (Intel)').replace('-arm64', ' (ARM)');
-              comment += `- \`${file}\` (${platform})\n`;
-            });
-
-            comment += `\n### Download:\n`;
-            comment += `Binaries are available as build artifacts for 7 days. To download:\n`;
-            comment += `1. Go to the [Actions tab](https://github.com/${{ github.repository }}/actions)\n`;
-            comment += `2. Find this workflow run\n`;
-            comment += `3. Download the \`moke-binaries-${{ steps.version.outputs.version }}\` artifact\n\n`;
-            comment += `### Next Steps:\n`;
-            comment += `To create a release, create and push a version tag:\n`;
-            comment += `\`\`\`bash\n`;
-            comment += `git tag v1.0.0\n`;
-            comment += `git push origin v1.0.0\n`;
-            comment += `\`\`\``;
-
-            github.rest.repos.createCommitComment({
+            const { data: comments } = await github.rest.repos.listCommitComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              commit_sha: context.sha,
-              body: comment
+              commit_sha: context.sha
             });
+            
+            // Check if we already commented on this commit
+            const existingComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('✅ Build completed successfully')
+            );
+            
+            if (!existingComment) {
+              await github.rest.repos.createCommitComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                commit_sha: context.sha,
+                body: `## ✅ Build completed successfully!
+                
+**Version:** ${{ steps.version.outputs.version }}
+**Commit:** ${{ steps.version.outputs.hash }}
+**Date:** ${{ steps.version.outputs.date }}
+
+### Built Binaries:
+- \`moke-linux-amd64\` (Linux Intel/AMD 64-bit)
+- \`moke-linux-arm64\` (Linux ARM 64-bit)  
+- \`moke-darwin-amd64\` (macOS Intel)
+- \`moke-darwin-arm64\` (macOS Apple Silicon)
+
+Binaries are available as build artifacts for 7 days.
+
+*This comment was created to test the permissions approach in the workflow.*`
+              });
+            }
