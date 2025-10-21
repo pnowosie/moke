@@ -34,9 +34,9 @@ show_usage() {
 # Function to validate version format
 validate_version() {
     local version=$1
-    if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9\-\.]+)?$ ]]; then
+    if [[ ! $version =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9._-]+)?$ ]]; then
         echo -e "${RED}Error: Invalid version format '$version'${NC}"
-        echo "Version should follow semantic versioning (e.g., 1.0.0, 1.2.3-beta)"
+        echo "Version should follow semantic versioning (e.g., 0.0.0, 1.0.0, 1.2.3-beta)"
         exit 1
     fi
 }
