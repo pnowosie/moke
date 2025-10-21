@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*" # Triggers on version tags like v1.0.0
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for proper version extraction
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.4"
+
+      - name: Install dependencies
+        run: go mod tidy
+
+      - name: Extract version information
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            # For manual dispatch or non-tag pushes, use git describe
+            VERSION=$(git describe --tags --always --dirty)
+            # Remove 'v' prefix if present
+            VERSION=${VERSION#v}
+          fi
+
+          # Get commit date
+          DATE=$(git log -1 --format=%cd --date=short)
+
+          # Get short commit hash
+          HASH=$(git rev-parse --short HEAD)
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "date=$DATE" >> $GITHUB_OUTPUT
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+
+          echo "Version: $VERSION"
+          echo "Date: $DATE"
+          echo "Hash: $HASH"
+
+      - name: Build for Linux (amd64)
+        run: |
+          GOOS=linux GOARCH=amd64 go build \
+            -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
+            -o build/moke-linux-amd64 \
+            cmd/moke.go
+
+      - name: Build for Linux (arm64)
+        run: |
+          GOOS=linux GOARCH=arm64 go build \
+            -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
+            -o build/moke-linux-arm64 \
+            cmd/moke.go
+
+      - name: Build for macOS (amd64)
+        run: |
+          GOOS=darwin GOARCH=amd64 go build \
+            -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
+            -o build/moke-darwin-amd64 \
+            cmd/moke.go
+
+      - name: Build for macOS (arm64)
+        run: |
+          GOOS=darwin GOARCH=arm64 go build \
+            -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
+            -o build/moke-darwin-arm64 \
+            cmd/moke.go
+
+      - name: Make binaries executable
+        run: |
+          chmod +x build/moke-*
+
+      - name: Test binaries
+        run: |
+          echo "Testing Linux amd64:"
+          ./build/moke-linux-amd64 -v
+
+      - name: Create checksums
+        run: |
+          cd build
+          sha256sum moke-* > checksums.txt
+          cat checksums.txt
+
+      - name: Create Release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/moke-linux-amd64
+            build/moke-linux-arm64
+            build/moke-darwin-amd64
+            build/moke-darwin-arm64
+            build/checksums.txt
+          name: Release ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          body: |
+            ## moke ${{ steps.version.outputs.version }}
+
+            ### Downloads
+
+            **Linux:**
+            - [moke-linux-amd64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/moke-linux-amd64) (Intel/AMD 64-bit)
+            - [moke-linux-arm64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/moke-linux-arm64) (ARM 64-bit)
+
+            **macOS:**
+            - [moke-darwin-amd64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/moke-darwin-amd64) (Intel)
+            - [moke-darwin-arm64](https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/moke-darwin-arm64) (Apple Silicon)
+
+            ### Installation
+
+            1. Download the appropriate binary for your platform
+            2. Make it executable: `chmod +x moke-*`
+            3. Move to your PATH: `sudo mv moke-* /usr/local/bin/moke`
+            4. Run: `moke -v` to verify installation
+
+            ### Checksums
+
+            See `checksums.txt` for SHA256 checksums of all binaries.
+
+            ---
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts (for manual releases)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: moke-binaries-${{ steps.version.outputs.version }}
+          path: build/
+          retention-days: 30

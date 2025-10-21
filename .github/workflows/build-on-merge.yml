@@ -8,21 +8,21 @@ on:
 jobs:
   build-binaries:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23.4'
-      
+          go-version: "1.23.4"
+
       - name: Install dependencies
         run: go mod tidy
-      
+
       - name: Extract version information
         id: version
         run: |
@@ -30,93 +30,87 @@ jobs:
           VERSION=$(git describe --tags --always --dirty)
           # Remove 'v' prefix if present
           VERSION=${VERSION#v}
-          
+
           # Get commit date
           DATE=$(git log -1 --format=%cd --date=short)
-          
+
           # Get short commit hash
           HASH=$(git rev-parse --short HEAD)
-          
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "date=$DATE" >> $GITHUB_OUTPUT
           echo "hash=$HASH" >> $GITHUB_OUTPUT
-          
+
           echo "Version: $VERSION"
           echo "Date: $DATE"
           echo "Hash: $HASH"
-      
+
       - name: Build for Linux (amd64)
         run: |
           GOOS=linux GOARCH=amd64 go build \
             -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
             -o build/moke-linux-amd64 \
             cmd/moke.go
-      
+
       - name: Build for Linux (arm64)
         run: |
           GOOS=linux GOARCH=arm64 go build \
             -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
             -o build/moke-linux-arm64 \
             cmd/moke.go
-      
+
       - name: Build for macOS (amd64)
         run: |
           GOOS=darwin GOARCH=amd64 go build \
             -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
             -o build/moke-darwin-amd64 \
             cmd/moke.go
-      
+
       - name: Build for macOS (arm64)
         run: |
           GOOS=darwin GOARCH=arm64 go build \
             -ldflags "-X main.Semver=${{ steps.version.outputs.version }} -X main.Date=${{ steps.version.outputs.date }} -X main.Hash=${{ steps.version.outputs.hash }}" \
             -o build/moke-darwin-arm64 \
             cmd/moke.go
-      
+
       - name: Make binaries executable
         run: |
           chmod +x build/moke-*
-      
+
       - name: Test binaries
         run: |
           echo "Testing Linux amd64:"
           ./build/moke-linux-amd64 -v
-          echo "Testing Linux arm64:"
-          ./build/moke-linux-arm64 -v
-          echo "Testing macOS amd64:"
-          ./build/moke-darwin-amd64 -v
-          echo "Testing macOS arm64:"
-          ./build/moke-darwin-arm64 -v
-      
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: moke-binaries-${{ steps.version.outputs.version }}
           path: build/
           retention-days: 7
-      
+
       - name: Comment on commit
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             // List all built binaries
             const buildDir = 'build';
             const files = fs.readdirSync(buildDir).filter(file => file.startsWith('moke-'));
-            
+
             let comment = `## 🚀 Build Complete!\n\n`;
             comment += `**Version:** ${{ steps.version.outputs.version }}\n`;
             comment += `**Commit:** ${{ steps.version.outputs.hash }}\n`;
             comment += `**Date:** ${{ steps.version.outputs.date }}\n\n`;
             comment += `### Built Binaries:\n`;
-            
+
             files.forEach(file => {
               const platform = file.replace('moke-', '').replace('-amd64', ' (Intel)').replace('-arm64', ' (ARM)');
               comment += `- \`${file}\` (${platform})\n`;
             });
-            
+
             comment += `\n### Download:\n`;
             comment += `Binaries are available as build artifacts for 7 days. To download:\n`;
             comment += `1. Go to the [Actions tab](https://github.com/${{ github.repository }}/actions)\n`;
@@ -128,7 +122,7 @@ jobs:
             comment += `git tag v1.0.0\n`;
             comment += `git push origin v1.0.0\n`;
             comment += `\`\`\``;
-            
+
             github.rest.repos.createCommitComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
