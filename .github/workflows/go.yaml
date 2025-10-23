@@ -25,7 +25,7 @@ jobs:
         run: go mod tidy
 
       - name: Build
-        run: go build -v -o moke ./cmd/
+        run: go build -v -o moke .
 
       - name: Run tests
         run: go test -v ./...

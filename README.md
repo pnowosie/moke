@@ -20,9 +20,21 @@ Please note that Moke is not designed with security in mind. It is intended pure
 
 ## Quick Start
 
-### Download Pre-built Binaries (Recommended)
+### Installation Methods
 
-#### Quick Install (curl | bash)
+#### Option 1: Go Install (if Go is installed)
+
+If you have Go installed on your system, the easiest way to install moke is:
+
+```bash
+go install github.com/pnowosie/moke@latest
+```
+
+This will download and install the latest version of moke to your `$GOPATH/bin` directory.
+
+#### Option 2: Download Pre-built Binaries
+
+##### Quick Install (curl | bash)
 
 The easiest way to install moke is using our automated installer:
 
@@ -41,21 +53,19 @@ The installer automatically:
 - Validates checksums for security
 - Installs to `/usr/local/bin` (with `--install` flag)
 
-#### Manual Download
+##### Manual Download
 
 In case you don't trust the installation script, manual download of a pre-built binary from the [Releases](https://github.com/pnowosie/moke/releases) page is still an option.
 
-### Build from Source
+#### Option 3: Build from Source
 
 If you prefer to build from source or want to contribute:
 
 1. **Prerequisites**:
-
    - Go 1.23.4 or later
    - Git
 
 2. **Clone and build**:
-
    ```bash
    git clone https://github.com/pnowosie/moke
    cd moke

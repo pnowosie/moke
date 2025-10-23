@@ -112,9 +112,9 @@ mkdir -p build
 # Build the application with dynamic version information
 echo "Building application for $PLATFORM..."
 if [ -n "$GOOS" ] && [ -n "$GOARCH" ]; then
-    GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-X main.Semver=$SEMVER -X main.Date=$DATE -X main.Hash=$HASH" -o $OUTPUT cmd/moke.go
+    GOOS=$GOOS GOARCH=$GOARCH go build -ldflags "-X main.Semver=$SEMVER -X main.Date=$DATE -X main.Hash=$HASH" -o $OUTPUT .
 else
-    go build -ldflags "-X main.Semver=$SEMVER -X main.Date=$DATE -X main.Hash=$HASH" -o $OUTPUT cmd/moke.go
+    go build -ldflags "-X main.Semver=$SEMVER -X main.Date=$DATE -X main.Hash=$HASH" -o $OUTPUT .
 fi
 
 if [ $? -eq 0 ]; then
